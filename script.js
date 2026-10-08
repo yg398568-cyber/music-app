@@ -4,7 +4,11 @@ const W=(k,v)=>{try{localStorage.setItem('p_'+k,JSON.stringify(v))}catch(e){}};
 let all=[],q=[],i=-1,cur=null,sleepT=null,shown={songs:[],favs:[]};
 let favs=new Set(S('favs',[])),shuf=S('shuf',false),rep=S('rep',false),speed=S('speed',1),theme=S('theme','violet');
 const fmt=s=>isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
-const msg=t=>$('msg').textContent=t;
+let toastT;
+function toast(t){const e=$('toast');e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>e.hidden=true,3000)}
+function alertBox(t){$('mtext').textContent=t;$('modal').hidden=false}
+$('mok').onclick=()=>$('modal').hidden=true;
+const msg=t=>{$('msg').textContent=t;toast(t)};
 const AUD=/\.(mp3|m4a|aac|wav|ogg|opus|flac|wma|amr)$/i;
 
 /* الأقسام */
@@ -110,7 +114,7 @@ a.defaultPlaybackRate=a.playbackRate=speed;btns();
 /* تحميل الأغاني */
 function setAll(list,note){
   all=list;renderAll();
-  msg(list.length?note:'مالقيتش أغاني 🤔');
+  if(list.length)msg(note);else alertBox('مالقيتش أغاني في الجهاز 🤔');
   const last=S('last',null),n=all.findIndex(t=>t.key===last);
   if(n>=0&&!cur)play(all,n,false);
 }
@@ -120,7 +124,7 @@ async function scanApp(){
   try{
     const r=await Capacitor.registerPlugin('MusicScanner').scan();
     setAll((r.songs||[]).map(x=>({name:x.title||'بدون اسم',artist:x.artist&&x.artist!=='<unknown>'?x.artist:'',key:x.path,url:Capacitor.convertFileSrc('file://'+encodeURI(x.path))})),'لقيت '+(r.songs||[]).length+' أغنية 🎉');
-  }catch(e){msg('لازم تسمح بالوصول للموسيقى عشان أدوّر 🙏')}
+  }catch(e){const m=(e&&e.message)||String(e);alertBox(m==='denied'?'محتاج إذن الموسيقى عشان ألاقي أغانيك 🙏\n\nافتح إعدادات الموبايل ← التطبيقات ← التطبيق ← الأذونات ← الموسيقى والصوت ← سماح، وبعدين دوس البحث تاني.':'حصلت مشكلة: '+m)}
 }
 const fromFiles=fs=>[...fs].filter(f=>AUD.test(f.name)||(f.type||'').startsWith('audio/')).map(f=>({name:f.name.replace(/\.[^.]+$/,''),artist:'',key:f.name,url:URL.createObjectURL(f)}));
 async function walk(d,out){for await(const [n,h] of d.entries()){if(h.kind==='file'){if(AUD.test(n))out.push(await h.getFile())}else await walk(h,out)}}
