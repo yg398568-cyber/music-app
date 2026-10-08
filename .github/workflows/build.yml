@@ -26,6 +26,13 @@ jobs:
           npx cap init Music com.yasser.musicplayer --web-dir www
           npx cap add android
           sed -i 's#<application#<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <application#' android/app/src/main/AndroidManifest.xml
+          cat >> android/app/build.gradle <<'EOF'
+
+          configurations.all {
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+              exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+          }
+          EOF
           npx cap sync android
       - name: Build APK
         run: |
