@@ -55,8 +55,7 @@ public class MusicScannerPlugin extends Plugin {
         };
         try (Cursor c = getContext().getContentResolver().query(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, cols,
-                MediaStore.Audio.Media.IS_MUSIC + " != 0", null,
-                MediaStore.Audio.Media.TITLE + " COLLATE LOCALIZED ASC")) {
+                MediaStore.Audio.Media.IS_MUSIC + " != 0", null, null)) {
             if (c != null) {
                 while (c.moveToNext()) {
                     JSObject s = new JSObject();
@@ -67,7 +66,7 @@ public class MusicScannerPlugin extends Plugin {
                 }
             }
         } catch (Exception e) {
-            call.reject("scan failed");
+            call.reject("scan failed: " + e.getMessage());
             return;
         }
         JSObject ret = new JSObject();

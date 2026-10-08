@@ -125,7 +125,7 @@ async function scanApp(){
     const P=Capacitor.Plugins&&Capacitor.Plugins.MusicScanner;
     if(!P)throw new Error('إضافة البحث مش متسجلة في التطبيق');
     const r=await P.scan();
-    setAll((r.songs||[]).map(x=>({name:x.title||'بدون اسم',artist:x.artist&&x.artist!=='<unknown>'?x.artist:'',key:x.path,url:Capacitor.convertFileSrc?Capacitor.convertFileSrc('file://'+encodeURI(x.path)):location.origin+'/_capacitor_file_'+encodeURI(x.path)})),'لقيت '+(r.songs||[]).length+' أغنية 🎉');
+    setAll((r.songs||[]).sort((x,y)=>(x.title||'').localeCompare(y.title||'','ar')).map(x=>({name:x.title||'بدون اسم',artist:x.artist&&x.artist!=='<unknown>'?x.artist:'',key:x.path,url:Capacitor.convertFileSrc?Capacitor.convertFileSrc('file://'+encodeURI(x.path)):location.origin+'/_capacitor_file_'+encodeURI(x.path)})),'لقيت '+(r.songs||[]).length+' أغنية 🎉');
   }catch(e){const m=(e&&e.message)||String(e);alertBox(m==='denied'?'محتاج إذن الموسيقى عشان ألاقي أغانيك 🙏\n\nافتح إعدادات الموبايل ← التطبيقات ← التطبيق ← الأذونات ← الموسيقى والصوت ← سماح، وبعدين دوس البحث تاني.':'حصلت مشكلة: '+m)}
 }
 const fromFiles=fs=>[...fs].filter(f=>AUD.test(f.name)||(f.type||'').startsWith('audio/')).map(f=>({name:f.name.replace(/\.[^.]+$/,''),artist:'',key:f.name,url:URL.createObjectURL(f)}));
