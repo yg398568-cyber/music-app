@@ -1,34 +1,79 @@
-const a=new Audio(),$=id=>document.getElementById(id);
-let q=[],i=-1,shuf=false,rep=false;
+const $=id=>document.getElementById(id),a=new Audio();
+const S=(k,d)=>{try{const v=localStorage.getItem('p_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}};
+const W=(k,v)=>{try{localStorage.setItem('p_'+k,JSON.stringify(v))}catch(e){}};
+let all=[],q=[],i=-1,cur=null,sleepT=null,shown={songs:[],favs:[]};
+let favs=new Set(S('favs',[])),shuf=S('shuf',false),rep=S('rep',false),speed=S('speed',1),theme=S('theme','violet');
 const fmt=s=>isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
-function render(){
-  const l=$('list');
-  if(!q.length){l.innerHTML='<li class="empty">القايمة فاضية</li>';return}
-  l.innerHTML='';
-  q.forEach((t,n)=>{const li=document.createElement('li');if(n===i)li.className='cur';
-    li.innerHTML='<small>'+(n+1)+'</small><span></span>';li.querySelector('span').textContent=t.name;
-    li.onclick=()=>load(n,true);l.appendChild(li)});
+const msg=t=>$('msg').textContent=t;
+const AUD=/\.(mp3|m4a|aac|wav|ogg|opus|flac|wma|amr)$/i;
+
+/* الأقسام */
+function tab(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id==='p-'+n));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===n));
+  $('mini').hidden=!cur||n==='player';
 }
-function load(n,go){
-  if(n<0||n>=q.length)return;i=n;a.src=q[n].url;
-  $('title').textContent=q[n].name;$('sub').textContent='أغنية '+(n+1)+' من '+q.length;
-  render();if(go)a.play().catch(()=>{});
-  if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:q[n].name});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+$('mini').onclick=e=>{if(!e.target.closest('#mplay'))tab('player')};
+
+/* القوايم */
+function fill(ul,arr,empty){
+  ul.innerHTML='';
+  if(!arr.length){ul.innerHTML='<li class="empty">'+empty+'</li>';return}
+  const f=document.createDocumentFragment();
+  arr.forEach((t,n)=>{
+    const li=document.createElement('li');li.dataset.n=n;
+    if(cur&&cur.key===t.key)li.className='cur';
+    const sp=document.createElement('span');sp.textContent=t.name;
+    if(t.artist){const sm=document.createElement('small');sm.textContent=t.artist;sp.appendChild(sm)}
+    const b=document.createElement('button');b.className='heart';b.textContent=favs.has(t.key)?'❤️':'🤍';b.setAttribute('aria-label','مفضلة');
+    li.append(sp,b);f.appendChild(li);
+  });
+  ul.appendChild(f);
 }
-function nxt(){if(!q.length)return;load(shuf?Math.floor(Math.random()*q.length):(i+1)%q.length,true)}
-function prv(){if(!q.length)return;if(a.currentTime>3){a.currentTime=0;return}load((i-1+q.length)%q.length,true)}
-$('files').onchange=e=>{
-  const was=q.length;
-  [...e.target.files].forEach(f=>q.push({name:f.name.replace(/\.[^.]+$/,''),url:URL.createObjectURL(f)}));
-  if(q.length&&i<0)load(0,true);else render();
-  e.target.value='';
-};
-$('play').onclick=()=>{if(i<0)return;a.paused?a.play():a.pause()};
-$('next').onclick=prv;$('prev').onclick=nxt;
-$('shuf').onclick=e=>{shuf=!shuf;e.currentTarget.classList.toggle('act',shuf)};
-$('rep').onclick=e=>{rep=!rep;e.currentTarget.classList.toggle('act',rep)};
-a.onplay=()=>{$('play').textContent='❚❚';$('disc').classList.add('on')};
-a.onpause=()=>{$('play').textContent='▶';$('disc').classList.remove('on')};
+function renderSongs(){
+  const s=$('search').value.trim().toLowerCase();
+  shown.songs=all.filter(t=>!s||(t.name+' '+t.artist).toLowerCase().includes(s));
+  fill($('songs'),shown.songs,all.length?'مفيش نتايج':'لسه مفيش أغاني، روح الإعدادات ودوس "دوّر على أغاني جهازك"');
+}
+function renderFavs(){
+  shown.favs=all.filter(t=>favs.has(t.key));
+  fill($('favlist'),shown.favs,'لسه مضفتش أغاني للمفضلة 🤍');
+}
+const renderAll=()=>{renderSongs();renderFavs()};
+$('search').oninput=renderSongs;
+[['songs','songs'],['favlist','favs']].forEach(([id,k])=>$(id).onclick=e=>{
+  const li=e.target.closest('li[data-n]');if(!li)return;
+  const n=+li.dataset.n,t=shown[k][n];
+  if(e.target.closest('.heart'))toggleFav(t.key);else{play(shown[k],n);tab('player')}
+});
+function toggleFav(k){favs.has(k)?favs.delete(k):favs.add(k);W('favs',[...favs]);renderAll();info()}
+$('fav').onclick=()=>{if(cur)toggleFav(cur.key)};
+
+/* التشغيل */
+function play(list,n,go=true){
+  q=list;i=n;cur=q[n];a.src=cur.url;W('last',cur.key);
+  info();renderAll();
+  if(go)a.play().catch(()=>{});
+  if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:cur.name,artist:cur.artist||''});
+}
+function info(){
+  $('title').textContent=cur?cur.name:'اختار أغنية';
+  $('artist').textContent=cur?cur.artist||'':'';
+  $('mtitle').textContent=cur?cur.name:'';
+  $('fav').textContent=cur&&favs.has(cur.key)?'❤️':'🤍';
+  $('mini').hidden=!cur||document.getElementById('p-player').classList.contains('on');
+}
+const nxt=()=>{if(q.length)play(q,shuf?Math.floor(Math.random()*q.length):(i+1)%q.length)};
+const prv=()=>{if(!q.length)return;if(a.currentTime>3){a.currentTime=0;return}play(q,(i-1+q.length)%q.length)};
+const toggle=()=>{if(cur)a.paused?a.play():a.pause()};
+$('play').onclick=$('mplay').onclick=toggle;
+$('next').onclick=nxt;$('prev').onclick=prv;
+$('shuf').onclick=()=>{shuf=!shuf;W('shuf',shuf);btns()};
+$('rep').onclick=()=>{rep=!rep;W('rep',rep);btns()};
+function btns(){$('shuf').classList.toggle('act',shuf);$('rep').classList.toggle('act',rep)}
+a.onplay=()=>{$('play').textContent=$('mplay').textContent='❚❚';$('disc').classList.add('on')};
+a.onpause=()=>{$('play').textContent=$('mplay').textContent='▶';$('disc').classList.remove('on')};
 a.onloadedmetadata=()=>$('dur').textContent=fmt(a.duration);
 a.ontimeupdate=()=>{$('cur').textContent=fmt(a.currentTime);if(a.duration)$('seek').value=a.currentTime/a.duration*100};
 $('seek').oninput=e=>{if(a.duration)a.currentTime=e.target.value/100*a.duration};
@@ -36,46 +81,56 @@ a.onended=()=>{if(rep){a.currentTime=0;a.play()}else nxt()};
 if('mediaSession' in navigator){
   navigator.mediaSession.setActionHandler('nexttrack',nxt);
   navigator.mediaSession.setActionHandler('previoustrack',prv);
+  navigator.mediaSession.setActionHandler('play',toggle);
+  navigator.mediaSession.setActionHandler('pause',toggle);
 }
 
-/* ===== اكتشاف الأغاني من فولدر ===== */
-const AUD=/\.(mp3|m4a|aac|wav|ogg|opus|flac|wma|amr)$/i;
-const msg=t=>$('msg').textContent=t;
-function db(){return new Promise((ok,no)=>{const r=indexedDB.open('player',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
-async function kv(mode,key,val){try{const d=await db();return await new Promise((ok,no)=>{const tx=d.transaction('kv',mode==='r'?'readonly':'readwrite'),s=tx.objectStore('kv'),r=mode==='r'?s.get(key):s.put(val,key);r.onsuccess=()=>ok(r.result);r.onerror=()=>no()})}catch(e){return null}}
-function setQueue(files){
-  files=files.filter(f=>AUD.test(f.name)||(f.type||'').startsWith('audio/'));
-  if(!files.length){msg('مالقيتش أغاني في المكان ده 🤔');return}
-  files.sort((x,y)=>x.name.localeCompare(y.name,'ar'));
-  a.pause();q.forEach(t=>URL.revokeObjectURL(t.url));
-  q=files.map(f=>({name:f.name.replace(/\.[^.]+$/,''),url:URL.createObjectURL(f)}));
-  i=-1;load(0,false);msg('لقيت '+q.length+' أغنية 🎉');
+/* الإعدادات */
+function seg(id,items,get,set){
+  const box=$(id);box.innerHTML='';
+  items.forEach(([v,label])=>{
+    const b=document.createElement('button');b.textContent=label;
+    b.onclick=()=>{set(v);paint()};box.appendChild(b);b._v=v;
+  });
+  function paint(){[...box.children].forEach(b=>b.classList.toggle('act',b._v===get()))}
+  paint();
 }
-async function walk(dir,out){
-  for await(const [n,h] of dir.entries()){
-    if(h.kind==='file'){if(AUD.test(n))out.push(await h.getFile())}
-    else await walk(h,out);
-  }
+let sleepMin=0;
+seg('seg-theme',[['violet','بنفسجي'],['ocean','أزرق'],['sunset','غروب']],()=>theme,v=>{theme=v;W('theme',v);document.documentElement.dataset.theme=v});
+seg('seg-speed',[[0.75,'0.75×'],[1,'عادي'],[1.25,'1.25×'],[1.5,'1.5×']],()=>speed,v=>{speed=v;W('speed',v);a.defaultPlaybackRate=a.playbackRate=v});
+seg('seg-sleep',[[0,'إيقاف'],[15,'15 د'],[30,'30 د'],[60,'60 د']],()=>sleepMin,v=>{
+  sleepMin=v;clearTimeout(sleepT);
+  $('sleepinfo').textContent=v?'هيقف التشغيل بعد '+v+' دقيقة 😴':'';
+  if(v)sleepT=setTimeout(()=>{a.pause();sleepMin=0;$('sleepinfo').textContent='وقف التشغيل 😴';
+    document.querySelectorAll('#seg-sleep button').forEach(b=>b.classList.toggle('act',b._v===0))},v*60000);
+});
+document.documentElement.dataset.theme=theme;
+a.defaultPlaybackRate=a.playbackRate=speed;btns();
+
+/* تحميل الأغاني */
+function setAll(list,note){
+  all=list;renderAll();
+  msg(list.length?note:'مالقيتش أغاني 🤔');
+  const last=S('last',null),n=all.findIndex(t=>t.key===last);
+  if(n>=0&&!cur)play(all,n,false);
 }
-async function scanHandle(h){
-  msg('بدوّر...');const out=[];
-  try{await walk(h,out);setQueue(out)}catch(e){msg('حصلت مشكلة في القراءة، جرّب تاني')}
-}
-$('scan').onclick=async()=>{
-  if(window.showDirectoryPicker){
-    try{
-      const h=await showDirectoryPicker({mode:'read'});
-      await kv('w','dir',h);$('rescan').hidden=false;await scanHandle(h);
-    }catch(e){if(e.name!=='AbortError')$('dir').click()}
-  }else $('dir').click();
-};
-$('dir').onchange=e=>{setQueue([...e.target.files]);e.target.value=''};
-$('rescan').onclick=async()=>{
-  const h=await kv('r','dir');if(!h){$('rescan').hidden=true;return}
+const isApp=()=>window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform();
+async function scanApp(){
+  msg('بدوّر على أغانيك...');
   try{
-    if(await h.requestPermission({mode:'read'})==='granted')await scanHandle(h);
-    else msg('لازم توافق على الإذن عشان أقدر أقرا الأغاني');
-  }catch(e){msg('الفولدر ده مبقاش متاح، اختاره من جديد')}
+    const r=await Capacitor.registerPlugin('MusicScanner').scan();
+    setAll((r.songs||[]).map(x=>({name:x.title||'بدون اسم',artist:x.artist&&x.artist!=='<unknown>'?x.artist:'',key:x.path,url:Capacitor.convertFileSrc('file://'+encodeURI(x.path))})),'لقيت '+(r.songs||[]).length+' أغنية 🎉');
+  }catch(e){msg('لازم تسمح بالوصول للموسيقى عشان أدوّر 🙏')}
+}
+const fromFiles=fs=>[...fs].filter(f=>AUD.test(f.name)||(f.type||'').startsWith('audio/')).map(f=>({name:f.name.replace(/\.[^.]+$/,''),artist:'',key:f.name,url:URL.createObjectURL(f)}));
+async function walk(d,out){for await(const [n,h] of d.entries()){if(h.kind==='file'){if(AUD.test(n))out.push(await h.getFile())}else await walk(h,out)}}
+$('scan').onclick=async()=>{
+  if(isApp()){await scanApp();tab('songs');return}
+  if(window.showDirectoryPicker){
+    try{const h=await showDirectoryPicker({mode:'read'}),o=[];await walk(h,o);setAll(fromFiles(o),'لقيت '+o.length+' أغنية 🎉');tab('songs')}catch(e){}
+  }else $('files').click();
 };
-kv('r','dir').then(h=>{if(h)$('rescan').hidden=false});
+$('files').onchange=e=>{const l=fromFiles(e.target.files);setAll(all.concat(l),'ضفت '+l.length+' أغنية 🎉');e.target.value='';tab('songs')};
+if(isApp()){$('addl').hidden=true;scanApp()}
+renderAll();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});

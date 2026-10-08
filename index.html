@@ -11,26 +11,54 @@
 <meta name="theme-color" content="#1e1530">
 </head>
 <body>
-<div class="wrap">
-  <h1>مشغل الأغاني</h1>
-  <div class="disc" id="disc"></div>
-  <div class="title" id="title">اختار أغانيك عشان نبدأ</div>
-  <div class="sub" id="sub">لسه مفيش أغاني</div>
-  <div class="bar"><span id="cur">0:00</span><input type="range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="شريط التقدم"><span id="dur">0:00</span></div>
-  <div class="ctl">
-    <button id="shuf" aria-label="عشوائي">⤮</button>
-    <button id="next" aria-label="التالي">⏮</button>
-    <button id="play" aria-label="تشغيل">▶</button>
-    <button id="prev" aria-label="السابق">⏭</button>
-    <button id="rep" aria-label="تكرار">↻</button>
-  </div>
-  <button class="scan" id="scan">🔍 دوّر على أغاني جهازك</button>
-  <button class="scan alt" id="rescan" hidden>↻ حدّث من الفولدر المحفوظ</button>
-  <div class="msg" id="msg"></div>
-  <label class="add"><input type="file" id="files" accept="audio/*" multiple>+ أو ضيف ملفات بنفسك</label>
-  <input type="file" id="dir" webkitdirectory multiple hidden>
-  <ul id="list"><li class="empty">القايمة فاضية</li></ul>
-</div>
+<main>
+  <section class="page on" id="p-songs">
+    <h1>الأغاني</h1>
+    <input type="search" id="search" placeholder="🔎 دوّر على أغنية أو فنان">
+    <div class="msg" id="msg"></div>
+    <ul id="songs"></ul>
+  </section>
+
+  <section class="page" id="p-player">
+    <div class="disc" id="disc"></div>
+    <div class="title" id="title">اختار أغنية</div>
+    <div class="sub" id="artist"></div>
+    <div class="bar"><span id="cur">0:00</span><input type="range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="شريط التقدم"><span id="dur">0:00</span></div>
+    <div class="ctl">
+      <button id="shuf" aria-label="عشوائي">🔀</button>
+      <button id="prev" aria-label="السابق">⏮</button>
+      <button id="play" aria-label="تشغيل">▶</button>
+      <button id="next" aria-label="التالي">⏭</button>
+      <button id="rep" aria-label="تكرار">🔁</button>
+    </div>
+    <div class="ctl"><button id="fav" aria-label="مفضلة">🤍</button></div>
+  </section>
+
+  <section class="page" id="p-favs">
+    <h1>المفضلة ❤️</h1>
+    <ul id="favlist"></ul>
+  </section>
+
+  <section class="page" id="p-settings">
+    <h1>الإعدادات</h1>
+    <div class="card"><h2>🎨 المظهر</h2><div class="seg" id="seg-theme"></div></div>
+    <div class="card"><h2>⏩ سرعة التشغيل</h2><div class="seg" id="seg-speed"></div></div>
+    <div class="card"><h2>😴 مؤقت النوم</h2><div class="seg" id="seg-sleep"></div><div class="msg" id="sleepinfo"></div></div>
+    <div class="card"><h2>🎵 الأغاني</h2>
+      <button class="big" id="scan">🔍 دوّر على أغاني جهازك</button>
+      <label class="big alt" id="addl">+ ضيف ملفات بنفسك<input type="file" id="files" accept="audio/*" multiple hidden></label>
+    </div>
+  </section>
+</main>
+
+<div id="mini" hidden><span id="mtitle"></span><button id="mplay" aria-label="تشغيل">▶</button></div>
+
+<nav>
+  <button data-tab="songs" class="on"><i>🎵</i>الأغاني</button>
+  <button data-tab="player"><i>▶️</i>التشغيل</button>
+  <button data-tab="favs"><i>❤️</i>المفضلة</button>
+  <button data-tab="settings"><i>⚙️</i>الإعدادات</button>
+</nav>
 <script src="script.js"></script>
 </body>
 </html>
