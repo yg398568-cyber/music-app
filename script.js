@@ -76,8 +76,8 @@ $('next').onclick=nxt;$('prev').onclick=prv;
 $('shuf').onclick=()=>{shuf=!shuf;W('shuf',shuf);btns()};
 $('rep').onclick=()=>{rep=!rep;W('rep',rep);btns()};
 function btns(){$('shuf').classList.toggle('act',shuf);$('rep').classList.toggle('act',rep)}
-a.onplay=()=>{$('play').textContent=$('mplay').textContent='❚❚';$('disc').classList.add('on')};
-a.onpause=()=>{$('play').textContent=$('mplay').textContent='▶';$('disc').classList.remove('on')};
+a.onplay=()=>{$('play').textContent=$('mplay').textContent='❚❚';$('disc').classList.add('on');syncNotif()};
+a.onpause=()=>{$('play').textContent=$('mplay').textContent='▶';$('disc').classList.remove('on');syncNotif()};
 a.onloadedmetadata=()=>$('dur').textContent=fmt(a.duration);
 a.ontimeupdate=()=>{$('cur').textContent=fmt(a.currentTime);if(a.duration)$('seek').value=a.currentTime/a.duration*100};
 $('seek').oninput=e=>{if(a.duration)a.currentTime=e.target.value/100*a.duration};
@@ -88,6 +88,17 @@ if('mediaSession' in navigator){
   navigator.mediaSession.setActionHandler('play',toggle);
   navigator.mediaSession.setActionHandler('pause',toggle);
 }
+
+/* الإشعار والتحكم من برا التطبيق */
+const NP=()=>window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()&&Capacitor.Plugins&&Capacitor.Plugins.MusicScanner;
+function syncNotif(){const P=NP();if(P&&cur)P.showNotification({title:cur.name,artist:cur.artist||'',playing:!a.paused}).catch(()=>{})}
+(function(){const P=NP();if(!P)return;
+  P.addListener('mediaAction',e=>{
+    if(!cur)return;
+    const m=e&&e.action;
+    if(m==='play')a.play().catch(()=>{});else if(m==='pause')a.pause();else if(m==='next')nxt();else if(m==='prev')prv();
+  });
+})();
 
 /* الإعدادات */
 function seg(id,items,get,set){
@@ -115,6 +126,7 @@ a.defaultPlaybackRate=a.playbackRate=speed;btns();
 function setAll(list,note){
   all=list;renderAll();
   if(list.length)msg(note);else alertBox('مالقيتش أغاني في الجهاز 🤔');
+  if(list.length&&NP()&&!S('notifAsked',false)){W('notifAsked',true);NP().askNotif().catch(()=>{})}
   const last=S('last',null),n=all.findIndex(t=>t.key===last);
   if(n>=0&&!cur)play(all,n,false);
 }
