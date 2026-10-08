@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مشغل أغاني ياسر</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#1e1530">
+</head>
+<body>
+<div class="wrap">
+  <h1>مشغل الأغاني</h1>
+  <div class="disc" id="disc"></div>
+  <div class="title" id="title">اختار أغانيك عشان نبدأ</div>
+  <div class="sub" id="sub">لسه مفيش أغاني</div>
+  <div class="bar"><span id="cur">0:00</span><input type="range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="شريط التقدم"><span id="dur">0:00</span></div>
+  <div class="ctl">
+    <button id="shuf" aria-label="عشوائي">⤮</button>
+    <button id="next" aria-label="التالي">⏮</button>
+    <button id="play" aria-label="تشغيل">▶</button>
+    <button id="prev" aria-label="السابق">⏭</button>
+    <button id="rep" aria-label="تكرار">↻</button>
+  </div>
+  <button class="scan" id="scan">🔍 دوّر على أغاني جهازك</button>
+  <button class="scan alt" id="rescan" hidden>↻ حدّث من الفولدر المحفوظ</button>
+  <div class="msg" id="msg"></div>
+  <label class="add"><input type="file" id="files" accept="audio/*" multiple>+ أو ضيف ملفات بنفسك</label>
+  <input type="file" id="dir" webkitdirectory multiple hidden>
+  <ul id="list"><li class="empty">القايمة فاضية</li></ul>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
