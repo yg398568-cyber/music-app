@@ -25,6 +25,7 @@ jobs:
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init Music com.yasser.musicplayer --web-dir www
           npx cap add android
+          cp MusicScannerPlugin.java MainActivity.java android/app/src/main/java/com/yasser/musicplayer/
           sed -i 's#<application#<uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <application#' android/app/src/main/AndroidManifest.xml
           cat >> android/app/build.gradle <<'EOF'
 
