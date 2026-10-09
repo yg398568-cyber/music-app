@@ -5,8 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
@@ -25,6 +27,7 @@ public class MusicService extends Service {
 
     private MediaSession session;
     private PowerManager.WakeLock wl;
+    private BroadcastReceiver noisy;
     private final Handler h = new Handler(Looper.getMainLooper());
     private String title = "", artist = "";
     private boolean playing = false, pausedByCall = false;
@@ -73,6 +76,20 @@ public class MusicService extends Service {
             wl.acquire(6 * 60 * 60 * 1000L);
         } catch (Exception e) { }
         h.postDelayed(callCheck, 1500);
+        try {
+            noisy = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context c, Intent i) {
+                    if (playing) act("pause");
+                }
+            };
+            IntentFilter f = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(noisy, f, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(noisy, f);
+            }
+        } catch (Exception e) { }
     }
 
     private void act(String a) {
@@ -161,6 +178,7 @@ public class MusicService extends Service {
     public void onDestroy() {
         running = false;
         h.removeCallbacks(callCheck);
+        try { if (noisy != null) unregisterReceiver(noisy); } catch (Exception e) { }
         try { session.release(); } catch (Exception e) { }
         try { if (wl != null && wl.isHeld()) wl.release(); } catch (Exception e) { }
         super.onDestroy();

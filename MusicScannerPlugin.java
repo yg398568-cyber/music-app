@@ -108,7 +108,9 @@ public class MusicScannerPlugin extends Plugin {
         String[] cols = {
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.DATA
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.DATE_ADDED
         };
         try (Cursor c = getContext().getContentResolver().query(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, cols,
@@ -119,6 +121,10 @@ public class MusicScannerPlugin extends Plugin {
                     s.put("title", c.getString(0));
                     s.put("artist", c.getString(1));
                     s.put("path", c.getString(2));
+                    s.put("album", c.getString(3));
+                    s.put("added", c.getLong(4));
+                    s.put("album", c.getString(3));
+                    s.put("added", c.getLong(4));
                     songs.put(s);
                 }
             }
